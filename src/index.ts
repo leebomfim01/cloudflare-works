@@ -1,8 +1,16 @@
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-		const requestBody = await request.json();
-		console.log(requestBody);
-		return new Response(JSON.stringify(requestBody), {
+		let responseBody = JSON.stringify("hello world");
+
+		try {
+			const requestBody = await request.json();
+			responseBody = JSON.stringify(requestBody);
+
+		} catch (error) {
+			console.log("Blank request body!");
+		}
+
+		return new Response(responseBody, {
 			headers: {
 				"Content-Type": "application/json"
 			}
