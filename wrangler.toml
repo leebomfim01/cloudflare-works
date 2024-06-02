@@ -1,6 +1,6 @@
 #:schema node_modules/wrangler/config-schema.json
 name = "cloudflare-works"
-main = "src/index.ts"
+main = "src/gemini.ts"
 compatibility_date = "2024-05-29"
 compatibility_flags = ["nodejs_compat"]
 
