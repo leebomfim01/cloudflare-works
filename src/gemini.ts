@@ -11,20 +11,27 @@ interface GeminiBody {
 	}>;
 }
 
+
+
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 
-		if (request.method !== "POST") {
-			return new Response("This endpoint only accepts POST requests", { status: 405 });
-		}
 
-		// Try to parse request body
-		try {
-			const body: RequestBody = await request.json();
-			const { userStoryName, description } = body;
-			console.log(userStoryName, description)
-			// Construct the request payload
-			const defaultPrompt = `
+		if (request.method === 'OPTIONS') {
+			return new Response(null, {
+				headers: {
+					'Access-Control-Allow-Origin': '*',
+					'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',
+					'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+				},
+			});
+		} else {
+			try {
+				const body: RequestBody = await request.json();
+				const { userStoryName, description } = body;
+				console.log(userStoryName, description)
+				// Construct the request payload
+				const defaultPrompt = `
         Gemini estou precisando descrever em inglês no codecommit as melhorias que fiz no meu projeto.
 
         Template de exemplo:
@@ -42,42 +49,42 @@ export default {
         Agora o que eu fiz:
         Em ${userStoryName} : ${description}`;
 
-			const payload = {
-				contents: [
-					{
-						parts: [{ text: defaultPrompt }],
+				const payload = {
+					contents: [
+						{
+							parts: [{ text: defaultPrompt }],
+						},
+					],
+				};
+
+				const apiKey = env.API_KEY;
+				const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
+
+				const response = await fetch(url, {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
 					},
-				],
-			};
+					body: JSON.stringify(payload),
+				});
 
-			const apiKey = env.API_KEY;
-			const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
+				if (!response.ok) {
+					throw new Error(`Error: ${response.status} - ${response.statusText}`);
+				}
+				const data: GeminiBody = await response.json() as GeminiBody;
 
-			const response = await fetch(url, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(payload),
-			});
+				const text = data.candidates[0].content.parts[0].text;
+				const textSplited = text.split("<break>");
+				const title = textSplited[0];
+				const markdown = textSplited[1];
 
-			if (!response.ok) {
-				throw new Error(`Error: ${response.status} - ${response.statusText}`);
+				return new Response(JSON.stringify({ title, markdown }), {
+					headers: { "Content-Type": "application/json" },
+				});
+			} catch (error) {
+				console.error("Error processing request:", error);
+				return new Response("Internal Server Error", { status: 500 });
 			}
-			const data: GeminiBody = await response.json() as GeminiBody;
-
-			const text = data.candidates[0].content.parts[0].text;
-			const textSplited = text.split("<break>");
-			const title = textSplited[0];
-			const markdown = textSplited[1];
-
-			// Return response as JSON
-			return new Response(JSON.stringify({ title, markdown }), {
-				headers: { "Content-Type": "application/json" },
-			});
-		} catch (error) {
-			console.error("Error processing request:", error);
-			return new Response("Internal Server Error", { status: 500 });
 		}
 	},
 };
