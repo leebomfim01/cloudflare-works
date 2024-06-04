@@ -7,7 +7,7 @@ export default {
 			responseBody = JSON.stringify(requestBody);
 
 		} catch (error) {
-			console.log("Blank request body!");
+			console.log("Blank request!");
 		}
 
 		return new Response(responseBody, {
